@@ -1,0 +1,42 @@
+/*
+ * Copyright (c) 2026 Besnovatyj. Licensed under the MIT License.
+ */
+
+.clear-module-widget {
+    position: relative;
+    min-height: 200px;
+}
+
+.clear-module-widget .loading-indicator {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+}
+
+.clear-module-widget .button-container {
+    margin-bottom: 1rem;
+}
+
+.clear-module-widget .data-table {
+    margin-bottom: 1rem;
+}
+
+.clear-module-widget .module-section {
+    margin-bottom: 2rem;
+}
+
+.clear-module-widget .module-section h3 {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.clear-module-widget .module-section .table {
+    margin-bottom: 0;
+}
+
+.clear-module-widget .btn-clear-all {
+    margin-left: auto;
+}
