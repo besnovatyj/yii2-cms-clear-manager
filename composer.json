@@ -13,7 +13,8 @@
   "minimum-stability": "stable",
   "extra": {
     "moduleClass": "Besnovatyj\\ClearManager\\Module",
-    "moduleId": "ClearManager"
+    "moduleId": "ClearManager",
+    "bescms": { "kind": "module" }
   },
   "keywords": [
     "yii2",
