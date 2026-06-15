@@ -9,8 +9,8 @@ declare(strict_types=1);
 namespace Besnovatyj\ClearManager;
 
 use common\components\module\CmsModule;
-use modules\modmanNew\contract\DeclaresModule;
-use modules\modmanNew\contract\ProvidesAdminMenu;
+use modules\modman\contract\DeclaresModule;
+use modules\modman\contract\ProvidesAdminMenu;
 
 /**
  * Модуль управления и очистки временных данных
