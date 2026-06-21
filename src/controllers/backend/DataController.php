@@ -58,9 +58,9 @@ class DataController extends  \yii\web\Controller
     public function actionGetCache(): array
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
-        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With-Fetch'];
+        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With'];
 
-        if ($this->isFetchRequest()) {
+        if (Yii::$app->getRequest()->getIsAjax()) {
             try {
                 return [
                     'status' => 'success',
@@ -83,9 +83,9 @@ class DataController extends  \yii\web\Controller
     public function actionClearCache(): array
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
-        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With-Fetch'];
+        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With'];
 
-        if ($this->isFetchRequest()) {
+        if (Yii::$app->getRequest()->getIsAjax()) {
             try {
                 if ($this->service->clearCache()) {
                     return [
@@ -110,9 +110,9 @@ class DataController extends  \yii\web\Controller
     public function actionGetFrontAssets(): array
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
-        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With-Fetch'];
+        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With'];
 
-        if ($this->isFetchRequest()) {
+        if (Yii::$app->getRequest()->getIsAjax()) {
             try {
                 return [
                     'status' => 'success',
@@ -135,9 +135,9 @@ class DataController extends  \yii\web\Controller
     public function actionClearFrontAssets(): array
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
-        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With-Fetch'];
+        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With'];
 
-        if ($this->isFetchRequest()) {
+        if (Yii::$app->getRequest()->getIsAjax()) {
             try {
                 if ($this->service->clearFrontAssets()) {
                     return [
@@ -162,9 +162,9 @@ class DataController extends  \yii\web\Controller
     public function actionGetBackAssets(): array
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
-        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With-Fetch'];
+        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With'];
 
-        if ($this->isFetchRequest()) {
+        if (Yii::$app->getRequest()->getIsAjax()) {
             try {
                 return [
                     'status' => 'success',
@@ -187,9 +187,9 @@ class DataController extends  \yii\web\Controller
     public function actionClearBackAssets(): array
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
-        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With-Fetch'];
+        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With'];
 
-        if ($this->isFetchRequest()) {
+        if (Yii::$app->getRequest()->getIsAjax()) {
             try {
                 if ($this->service->clearBackAssets()) {
                     return [
@@ -214,9 +214,9 @@ class DataController extends  \yii\web\Controller
     public function actionGetLogs(): array
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
-        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With-Fetch'];
+        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With'];
 
-        if ($this->isFetchRequest()) {
+        if (Yii::$app->getRequest()->getIsAjax()) {
             try {
                 return [
                     'status' => 'success',
@@ -239,9 +239,9 @@ class DataController extends  \yii\web\Controller
     public function actionClearLogs(): array
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
-        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With-Fetch'];
+        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With'];
 
-        if ($this->isFetchRequest()) {
+        if (Yii::$app->getRequest()->getIsAjax()) {
             try {
                 if ($this->service->clearLogs()) {
                     return [
@@ -266,9 +266,9 @@ class DataController extends  \yii\web\Controller
     public function actionGetDebug(): array
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
-        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With-Fetch'];
+        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With'];
 
-        if ($this->isFetchRequest()) {
+        if (Yii::$app->getRequest()->getIsAjax()) {
             try {
                 return [
                     'status' => 'success',
@@ -291,9 +291,9 @@ class DataController extends  \yii\web\Controller
     public function actionClearDebug(): array
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
-        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With-Fetch'];
+        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With'];
 
-        if ($this->isFetchRequest()) {
+        if (Yii::$app->getRequest()->getIsAjax()) {
             try {
                 if ($this->service->clearDebug()) {
                     return [
@@ -318,9 +318,9 @@ class DataController extends  \yii\web\Controller
     public function actionGetMail(): array
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
-        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With-Fetch'];
+        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With'];
 
-        if ($this->isFetchRequest()) {
+        if (Yii::$app->getRequest()->getIsAjax()) {
             try {
                 return [
                     'status' => 'success',
@@ -343,9 +343,9 @@ class DataController extends  \yii\web\Controller
     public function actionClearMail(): array
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
-        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With-Fetch'];
+        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With'];
 
-        if ($this->isFetchRequest()) {
+        if (Yii::$app->getRequest()->getIsAjax()) {
             try {
                 if ($this->service->clearMail()) {
                     return [
@@ -370,9 +370,9 @@ class DataController extends  \yii\web\Controller
     public function actionGetStatic(): array
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
-        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With-Fetch'];
+        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With'];
 
-        if ($this->isFetchRequest()) {
+        if (Yii::$app->getRequest()->getIsAjax()) {
             try {
                 return [
                     'status' => 'success',
@@ -395,9 +395,9 @@ class DataController extends  \yii\web\Controller
     public function actionClearStatic(): array
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
-        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With-Fetch'];
+        $response = ['status' => 'error', 'message' => 'Отсутствует заголовок X-Requested-With'];
 
-        if ($this->isFetchRequest()) {
+        if (Yii::$app->getRequest()->getIsAjax()) {
             try {
                 if ($this->service->clearStatic()) {
                     return [

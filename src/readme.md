@@ -59,7 +59,7 @@ return [
 
 **Требования:**
 - Метод: `POST`
-- Заголовок: `X-Requested-With-Fetch: true`
+- Заголовок: `X-Requested-With: XMLHttpRequest`
 - Формат ответа: JSON
 
 **Формат успешного ответа:**
@@ -94,7 +94,7 @@ return [
 
 **Требования:**
 - Метод: `POST`
-- Заголовок: `X-Requested-With-Fetch: true`
+- Заголовок: `X-Requested-With: XMLHttpRequest`
 - Формат ответа: JSON
 
 **Формат успешного ответа:**
@@ -178,10 +178,10 @@ class CacheController extends \yii\web\Controller
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        if (!$this->isFetchRequest()) {
+        if (!Yii::$app->getRequest()->getIsAjax()) {
             return [
                 'status' => 'error',
-                'message' => 'Отсутствует заголовок X-Requested-With-Fetch'
+                'message' => 'Отсутствует заголовок X-Requested-With'
             ];
         }
 
@@ -212,10 +212,10 @@ class CacheController extends \yii\web\Controller
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
 
-        if (!$this->isFetchRequest()) {
+        if (!Yii::$app->getRequest()->getIsAjax()) {
             return [
                 'status' => 'error',
-                'message' => 'Отсутствует заголовок X-Requested-With-Fetch'
+                'message' => 'Отсутствует заголовок X-Requested-With'
             ];
         }
 
@@ -293,7 +293,7 @@ public function actionGetData(): array
 {
     Yii::$app->response->format = Response::FORMAT_JSON;
 
-    if (!$this->isFetchRequest()) {
+    if (!Yii::$app->getRequest()->getIsAjax()) {
         return ['status' => 'error', 'message' => 'Invalid request'];
     }
 
@@ -450,7 +450,7 @@ $this->title = 'Управление временными данными';
 
 ### Безопасность
 
-- Все запросы требуют заголовок `X-Requested-With-Fetch: true`
+- Все запросы требуют заголовок `X-Requested-With: XMLHttpRequest`
 - Все действия контроллеров ограничены методом `POST`
 - Проверка прав доступа на уровне виджета
 - При очистке директорий файлы `.gitignore` не удаляются

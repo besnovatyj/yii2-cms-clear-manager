@@ -29,7 +29,6 @@ export class ApiService {
         return {
             'X-Requested-With': 'XMLHttpRequest',
             'X-CSRF-Token': this.getCsrfToken(),
-            'X-Requested-With-Fetch': 'true',
             'Content-Type': 'application/json',
         };
     }
