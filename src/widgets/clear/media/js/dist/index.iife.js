@@ -23,7 +23,6 @@ this.ClearWidget = function() {
       return {
         "X-Requested-With": "XMLHttpRequest",
         "X-CSRF-Token": this.getCsrfToken(),
-        "X-Requested-With-Fetch": "true",
         "Content-Type": "application/json"
       };
     }
@@ -35,21 +34,17 @@ this.ClearWidget = function() {
      * @returns Promise с ответом API
      */
     async post(url, body) {
-      try {
-        const response = await fetch(url, {
-          method: "POST",
-          headers: this.getRequestHeaders(),
-          body: body ? JSON.stringify(body) : void 0
-        });
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return await response.json();
-      } catch (error) {
-        throw new Error(
-          `Ошибка при выполнении запроса: ${error instanceof Error ? error.message : String(error)}`
-        );
+      const response = await fetch(url, {
+        method: "POST",
+        headers: this.getRequestHeaders(),
+        body: body ? JSON.stringify(body) : void 0
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        const message = payload && (payload.message || payload.name) || `HTTP ${response.status}`;
+        throw new Error(message);
       }
+      return payload;
     }
   }
   class CustomError extends Error {
@@ -125,27 +120,27 @@ this.ClearWidget = function() {
     async fetchModuleData(moduleEndpoints) {
       const data = {};
       if (this.isSingleEndpoint(moduleEndpoints)) {
-        try {
-          const response = await this.apiService.post(moduleEndpoints.getData);
-          if (response.status === "success" && response.data) {
-            data["default"] = response.data;
-          }
-        } catch (error) {
-          console.error("Ошибка при получении данных:", error);
-        }
+        data["default"] = await this.loadCell(moduleEndpoints.getData);
       } else {
         for (const [key, endpoint] of Object.entries(moduleEndpoints)) {
-          try {
-            const response = await this.apiService.post(endpoint.getData);
-            if (response.status === "success" && response.data) {
-              data[key] = response.data;
-            }
-          } catch (error) {
-            console.error(`Ошибка при получении данных для ${key}:`, error);
-          }
+          data[key] = await this.loadCell(endpoint.getData);
         }
       }
       return data;
+    }
+    /**
+     * Загружает данные одной ячейки. Ошибка НЕ проглатывается в консоль молча — она возвращается
+     * как {@link CellData} и затем видимо отображается в таблице (см. {@link createTableRow}).
+     */
+    async loadCell(url) {
+      try {
+        const response = await this.apiService.post(url);
+        return { value: response.data ?? "N/A" };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error("Ошибка при получении данных:", error);
+        return { error: message };
+      }
     }
     /**
      * Проверяет, является ли эндпойнт одиночным
@@ -213,7 +208,7 @@ this.ClearWidget = function() {
       if (this.isSingleEndpoint(moduleEndpoints)) {
         const row = this.createTableRow(
           moduleEndpoints.rowTitle ?? "Данные",
-          moduleData["default"] ?? "N/A",
+          moduleData["default"],
           moduleEndpoints.clear,
           moduleEndpoints.rowTitle ?? "данные"
         );
@@ -222,7 +217,7 @@ this.ClearWidget = function() {
         for (const [key, endpoint] of Object.entries(moduleEndpoints)) {
           const row = this.createTableRow(
             endpoint.rowTitle ?? key,
-            moduleData[key] ?? "N/A",
+            moduleData[key],
             endpoint.clear,
             endpoint.rowTitle ?? key
           );
@@ -237,16 +232,24 @@ this.ClearWidget = function() {
      * Создает строку таблицы
      *
      * @param title Название
-     * @param data Данные
+     * @param cell Данные ячейки (значение | ошибка | не загружено)
      * @param clearUrl URL для очистки
      * @param label Метка для кнопки
      * @returns HTML элемент строки
      */
-    createTableRow(title, data, clearUrl, label) {
+    createTableRow(title, cell, clearUrl, label) {
       const row = document.createElement("tr");
+      let dataCell;
+      if (cell === void 0) {
+        dataCell = "N/A";
+      } else if ("error" in cell) {
+        dataCell = `<span class="text-danger fw-bold" title="${this.escapeHtml(cell.error)}">⚠ Ошибка загрузки</span>`;
+      } else {
+        dataCell = this.escapeHtml(cell.value);
+      }
       row.innerHTML = `
-            <td>${title}</td>
-            <td>${data}</td>
+            <td>${this.escapeHtml(title)}</td>
+            <td>${dataCell}</td>
             <td>
                 <button class="btn btn-sm btn-danger clear-item" data-url="${clearUrl}" data-label="${label}">
                     Очистить
@@ -259,6 +262,12 @@ this.ClearWidget = function() {
       });
       return row;
     }
+    /** Экранирует строку для безопасной вставки в HTML (значения/ошибки от сервера). */
+    escapeHtml(value) {
+      const div = document.createElement("div");
+      div.textContent = value;
+      return div.innerHTML;
+    }
     /**
      * Обрабатывает очистку по одному эндпойнту
      *
@@ -266,25 +275,16 @@ this.ClearWidget = function() {
      * @param label Метка
      */
     async handleClear(url, label) {
-      var _a;
       try {
         const response = await this.apiService.post(url);
-        if (response.status === "success") {
-          if (typeof showAlert === "function") {
-            showAlert({
-              message: response.message || `${label}: успешно очищено`,
-              type: "success",
-              duration: 3e3
-            });
-          }
-          await this.fetchAndRender();
-        } else {
-          throw new CustomError(
-            String(response.message),
-            String(((_a = response.data) == null ? void 0 : _a.message) ?? ""),
-            response
-          );
+        if (typeof showAlert === "function") {
+          showAlert({
+            message: response.message || `${label}: успешно очищено`,
+            type: "success",
+            duration: 3e3
+          });
         }
+        await this.fetchAndRender();
       } catch (error) {
         this.errorHandler.handleError(error, "handleClear");
       }

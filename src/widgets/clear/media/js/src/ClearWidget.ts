@@ -5,6 +5,9 @@
 import { ApiService } from './ApiService';
 import { CustomError, ErrorHandler } from './ErrorHandler';
 
+/** Данные одной ячейки: либо загруженное значение, либо ошибка загрузки. */
+type CellData = { value: string } | { error: string };
+
 /**
  * Главный класс виджета очистки
  */
@@ -39,7 +42,7 @@ class ClearWidget {
     private async fetchAndRender(): Promise<void> {
         this.element.innerHTML = '<div class="loading-indicator"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div></div>';
 
-        const allData: Record<string, Record<string, string>> = {};
+        const allData: Record<string, Record<string, CellData>> = {};
 
         for (const [moduleId, moduleEndpoints] of Object.entries(this.endpoints)) {
             allData[moduleId] = await this.fetchModuleData(moduleEndpoints);
@@ -54,34 +57,33 @@ class ClearWidget {
      * @param moduleEndpoints Эндпойнты модуля
      * @returns Объект с данными
      */
-    private async fetchModuleData(moduleEndpoints: ModuleEndpoints): Promise<Record<string, string>> {
-        const data: Record<string, string> = {};
+    private async fetchModuleData(moduleEndpoints: ModuleEndpoints): Promise<Record<string, CellData>> {
+        const data: Record<string, CellData> = {};
 
         if (this.isSingleEndpoint(moduleEndpoints)) {
-            // Один эндпойнт
-            try {
-                const response = await this.apiService.post(moduleEndpoints.getData);
-                if (response.data) {
-                    data['default'] = response.data;
-                }
-            } catch (error) {
-                console.error('Ошибка при получении данных:', error);
-            }
+            data['default'] = await this.loadCell(moduleEndpoints.getData);
         } else {
-            // Несколько эндпойнтов
             for (const [key, endpoint] of Object.entries(moduleEndpoints)) {
-                try {
-                    const response = await this.apiService.post(endpoint.getData);
-                    if (response.data) {
-                        data[key] = response.data;
-                    }
-                } catch (error) {
-                    console.error(`Ошибка при получении данных для ${key}:`, error);
-                }
+                data[key] = await this.loadCell(endpoint.getData);
             }
         }
 
         return data;
+    }
+
+    /**
+     * Загружает данные одной ячейки. Ошибка НЕ проглатывается в консоль молча — она возвращается
+     * как {@link CellData} и затем видимо отображается в таблице (см. {@link createTableRow}).
+     */
+    private async loadCell(url: string): Promise<CellData> {
+        try {
+            const response = await this.apiService.post(url);
+            return { value: response.data ?? 'N/A' };
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            console.error('Ошибка при получении данных:', error);
+            return { error: message };
+        }
     }
 
     /**
@@ -96,7 +98,7 @@ class ClearWidget {
      *
      * @param allData Данные со всех модулей
      */
-    private render(allData: Record<string, Record<string, string>>): void {
+    private render(allData: Record<string, Record<string, CellData>>): void {
         this.element.innerHTML = '';
 
         // Кнопка полной очистки и обновления
@@ -137,7 +139,7 @@ class ClearWidget {
      * @param moduleData Данные модуля
      * @returns HTML элемент
      */
-    private renderModuleSection(moduleId: string, moduleData: Record<string, string>): HTMLElement {
+    private renderModuleSection(moduleId: string, moduleData: Record<string, CellData>): HTMLElement {
         const section = document.createElement('div');
         section.className = 'module-section';
 
@@ -165,7 +167,7 @@ class ClearWidget {
             // Один эндпойнт
             const row = this.createTableRow(
                 moduleEndpoints.rowTitle ?? 'Данные',
-                moduleData['default'] ?? 'N/A',
+                moduleData['default'],
                 moduleEndpoints.clear,
                 moduleEndpoints.rowTitle ?? 'данные'
             );
@@ -175,7 +177,7 @@ class ClearWidget {
             for (const [key, endpoint] of Object.entries(moduleEndpoints)) {
                 const row = this.createTableRow(
                     endpoint.rowTitle ?? key,
-                    moduleData[key] ?? 'N/A',
+                    moduleData[key],
                     endpoint.clear,
                     endpoint.rowTitle ?? key
                 );
@@ -193,17 +195,27 @@ class ClearWidget {
      * Создает строку таблицы
      *
      * @param title Название
-     * @param data Данные
+     * @param cell Данные ячейки (значение | ошибка | не загружено)
      * @param clearUrl URL для очистки
      * @param label Метка для кнопки
      * @returns HTML элемент строки
      */
-    private createTableRow(title: string, data: string, clearUrl: string, label: string): HTMLTableRowElement {
+    private createTableRow(title: string, cell: CellData | undefined, clearUrl: string, label: string): HTMLTableRowElement {
         const row = document.createElement('tr');
 
+        let dataCell: string;
+        if (cell === undefined) {
+            dataCell = 'N/A';
+        } else if ('error' in cell) {
+            // Ошибку загрузки показываем видимо (а не прячем в консоль); полный текст — в подсказке.
+            dataCell = `<span class="text-danger fw-bold" title="${this.escapeHtml(cell.error)}">⚠ Ошибка загрузки</span>`;
+        } else {
+            dataCell = this.escapeHtml(cell.value);
+        }
+
         row.innerHTML = `
-            <td>${title}</td>
-            <td>${data}</td>
+            <td>${this.escapeHtml(title)}</td>
+            <td>${dataCell}</td>
             <td>
                 <button class="btn btn-sm btn-danger clear-item" data-url="${clearUrl}" data-label="${label}">
                     Очистить
@@ -217,6 +229,13 @@ class ClearWidget {
         });
 
         return row;
+    }
+
+    /** Экранирует строку для безопасной вставки в HTML (значения/ошибки от сервера). */
+    private escapeHtml(value: string): string {
+        const div = document.createElement('div');
+        div.textContent = value;
+        return div.innerHTML;
     }
 
     /**
