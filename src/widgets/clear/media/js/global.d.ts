@@ -38,20 +38,10 @@ interface SuccessResponse {
 }
 
 /**
- * Ответ API при ошибке
+ * Ошибки больше НЕ приходят конвертом приложения: сервер отдаёт их с реальным HTTP-статусом
+ * (4xx/5xx) в нативном формате Yii ErrorHandler. `ApiService.post` парсит их и бросает `Error`
+ * с серверным `message`, поэтому в коде виджета успешный ответ — это всегда `SuccessResponse`.
  */
-interface ErrorResponse {
-    status: 'error';
-    message: string;
-    data?: {
-        message?: string;
-    };
-}
-
-/**
- * Объединенный тип ответа API
- */
-type ApiResponse = SuccessResponse | ErrorResponse;
 
 /**
  * Глобальная функция для отображения уведомлений

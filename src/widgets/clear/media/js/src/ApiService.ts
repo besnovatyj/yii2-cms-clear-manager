@@ -40,23 +40,23 @@ export class ApiService {
      * @param body Тело запроса (опционально)
      * @returns Promise с ответом API
      */
-    async post(url: string, body?: unknown): Promise<ApiResponse> {
-        try {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: this.getRequestHeaders(),
-                body: body ? JSON.stringify(body) : undefined,
-            });
+    async post(url: string, body?: unknown): Promise<SuccessResponse> {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: this.getRequestHeaders(),
+            body: body ? JSON.stringify(body) : undefined,
+        });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+        // Тело читаем всегда: при ошибке в нём лежит нативный конверт Yii ErrorHandler
+        // ({ name, message, code, status, ... }).
+        const payload = await response.json().catch(() => null);
 
-            return await response.json();
-        } catch (error) {
-            throw new Error(
-                `Ошибка при выполнении запроса: ${error instanceof Error ? error.message : String(error)}`
-            );
+        if (!response.ok) {
+            const message =
+                (payload && (payload.message || payload.name)) || `HTTP ${response.status}`;
+            throw new Error(message);
         }
+
+        return payload as SuccessResponse;
     }
 }

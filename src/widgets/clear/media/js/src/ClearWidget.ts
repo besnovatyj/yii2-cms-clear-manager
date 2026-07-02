@@ -61,7 +61,7 @@ class ClearWidget {
             // Один эндпойнт
             try {
                 const response = await this.apiService.post(moduleEndpoints.getData);
-                if (response.status === 'success' && response.data) {
+                if (response.data) {
                     data['default'] = response.data;
                 }
             } catch (error) {
@@ -72,7 +72,7 @@ class ClearWidget {
             for (const [key, endpoint] of Object.entries(moduleEndpoints)) {
                 try {
                     const response = await this.apiService.post(endpoint.getData);
-                    if (response.status === 'success' && response.data) {
+                    if (response.data) {
                         data[key] = response.data;
                     }
                 } catch (error) {
@@ -228,22 +228,15 @@ class ClearWidget {
     private async handleClear(url: string, label: string): Promise<void> {
         try {
             const response = await this.apiService.post(url);
-            if (response.status === 'success') {
-                if (typeof showAlert === 'function') {
-                    showAlert({
-                        message: response.message || `${label}: успешно очищено`,
-                        type: 'success',
-                        duration: 3000,
-                    });
-                }
-                await this.fetchAndRender();
-            } else {
-                throw new CustomError(
-                    String(response.message),
-                    String(response.data?.message ?? ''),
-                    response
-                );
+            // Ошибка прилетит исключением из ApiService.post (сервер отдаёт 4xx/5xx) — её ловит catch.
+            if (typeof showAlert === 'function') {
+                showAlert({
+                    message: response.message || `${label}: успешно очищено`,
+                    type: 'success',
+                    duration: 3000,
+                });
             }
+            await this.fetchAndRender();
         } catch (error) {
             this.errorHandler.handleError(error, 'handleClear');
         }
