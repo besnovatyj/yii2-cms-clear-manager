@@ -10,7 +10,7 @@ declare(strict_types=1);
 namespace Besnovatyj\ClearManager\widgets\clear;
 
 use Besnovatyj\ClearManager\services\EndpointCollectorService;
-use modules\user\components\Helper;
+use Besnovatyj\User\components\Helper;
 use yii\bootstrap5\Widget;
 
 /**
