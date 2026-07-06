@@ -210,6 +210,7 @@ this.ClearWidget = function() {
           moduleEndpoints.rowTitle ?? "Данные",
           moduleData["default"],
           moduleEndpoints.clear,
+          moduleEndpoints.getData,
           moduleEndpoints.rowTitle ?? "данные"
         );
         tbody.appendChild(row);
@@ -219,6 +220,7 @@ this.ClearWidget = function() {
             endpoint.rowTitle ?? key,
             moduleData[key],
             endpoint.clear,
+            endpoint.getData,
             endpoint.rowTitle ?? key
           );
           tbody.appendChild(row);
@@ -234,33 +236,56 @@ this.ClearWidget = function() {
      * @param title Название
      * @param cell Данные ячейки (значение | ошибка | не загружено)
      * @param clearUrl URL для очистки
+     * @param getDataUrl URL для точечного обновления данных строки после очистки
      * @param label Метка для кнопки
      * @returns HTML элемент строки
      */
-    createTableRow(title, cell, clearUrl, label) {
+    createTableRow(title, cell, clearUrl, getDataUrl, label) {
       const row = document.createElement("tr");
-      let dataCell;
-      if (cell === void 0) {
-        dataCell = "N/A";
-      } else if ("error" in cell) {
-        dataCell = `<span class="text-danger fw-bold" title="${this.escapeHtml(cell.error)}">⚠ Ошибка загрузки</span>`;
-      } else {
-        dataCell = this.escapeHtml(cell.value);
-      }
-      row.innerHTML = `
-            <td>${this.escapeHtml(title)}</td>
-            <td>${dataCell}</td>
-            <td>
-                <button class="btn btn-sm btn-danger clear-item" data-url="${clearUrl}" data-label="${label}">
-                    Очистить
-                </button>
-            </td>
-        `;
-      const button = row.querySelector(".clear-item");
+      const titleCell = document.createElement("td");
+      titleCell.textContent = title;
+      const dataCell = document.createElement("td");
+      this.renderCellContent(dataCell, cell);
+      const actionCell = document.createElement("td");
+      const button = document.createElement("button");
+      button.className = "btn btn-sm btn-danger clear-item";
+      button.textContent = "Очистить";
+      button.dataset.url = clearUrl;
+      button.dataset.label = label;
       button.addEventListener("click", async () => {
-        await this.handleClear(clearUrl, label);
+        await this.handleClear(clearUrl, getDataUrl, label, dataCell);
       });
+      actionCell.appendChild(button);
+      row.append(titleCell, dataCell, actionCell);
       return row;
+    }
+    /**
+     * Отрисовывает содержимое ячейки данных (значение | ошибка | не загружено) в переданный `<td>`.
+     * Вынесено отдельно, чтобы переиспользовать при первичном рендере и при точечном обновлении.
+     *
+     * @param dataCell Ячейка данных
+     * @param cell Данные ячейки
+     */
+    renderCellContent(dataCell, cell) {
+      if (cell === void 0) {
+        dataCell.textContent = "N/A";
+      } else if ("error" in cell) {
+        dataCell.innerHTML = `<span class="text-danger fw-bold" title="${this.escapeHtml(cell.error)}">⚠ Ошибка загрузки</span>`;
+      } else {
+        dataCell.textContent = cell.value;
+      }
+    }
+    /**
+     * Точечно обновляет одну ячейку данных: тянет только её эндпойнт вместо полного fetchAndRender.
+     * На время запроса показывает мини-спиннер прямо в ячейке.
+     *
+     * @param getDataUrl URL получения данных строки
+     * @param dataCell Ячейка данных для обновления
+     */
+    async refreshCell(getDataUrl, dataCell) {
+      dataCell.innerHTML = '<span class="spinner-border spinner-border-sm text-secondary" role="status"><span class="visually-hidden">Обновление...</span></span>';
+      const cell = await this.loadCell(getDataUrl);
+      this.renderCellContent(dataCell, cell);
     }
     /** Экранирует строку для безопасной вставки в HTML (значения/ошибки от сервера). */
     escapeHtml(value) {
@@ -269,14 +294,17 @@ this.ClearWidget = function() {
       return div.innerHTML;
     }
     /**
-     * Обрабатывает очистку по одному эндпойнту
+     * Обрабатывает очистку по одному эндпойнту. После успеха обновляет только свою ячейку данных
+     * (refreshCell), а не весь виджет — сбор данных остальных строк долгий и здесь не нужен.
      *
-     * @param url URL эндпойнта
+     * @param clearUrl URL очистки
+     * @param getDataUrl URL получения данных этой строки
      * @param label Метка
+     * @param dataCell Ячейка данных для точечного обновления
      */
-    async handleClear(url, label) {
+    async handleClear(clearUrl, getDataUrl, label, dataCell) {
       try {
-        const response = await this.apiService.post(url);
+        const response = await this.apiService.post(clearUrl);
         if (typeof showAlert === "function") {
           showAlert({
             message: response.message || `${label}: успешно очищено`,
@@ -284,7 +312,7 @@ this.ClearWidget = function() {
             duration: 3e3
           });
         }
-        await this.fetchAndRender();
+        await this.refreshCell(getDataUrl, dataCell);
       } catch (error) {
         this.errorHandler.handleError(error, "handleClear");
       }

@@ -169,6 +169,7 @@ class ClearWidget {
                 moduleEndpoints.rowTitle ?? 'Данные',
                 moduleData['default'],
                 moduleEndpoints.clear,
+                moduleEndpoints.getData,
                 moduleEndpoints.rowTitle ?? 'данные'
             );
             tbody.appendChild(row);
@@ -179,6 +180,7 @@ class ClearWidget {
                     endpoint.rowTitle ?? key,
                     moduleData[key],
                     endpoint.clear,
+                    endpoint.getData,
                     endpoint.rowTitle ?? key
                 );
                 tbody.appendChild(row);
@@ -197,38 +199,74 @@ class ClearWidget {
      * @param title Название
      * @param cell Данные ячейки (значение | ошибка | не загружено)
      * @param clearUrl URL для очистки
+     * @param getDataUrl URL для точечного обновления данных строки после очистки
      * @param label Метка для кнопки
      * @returns HTML элемент строки
      */
-    private createTableRow(title: string, cell: CellData | undefined, clearUrl: string, label: string): HTMLTableRowElement {
+    private createTableRow(
+        title: string,
+        cell: CellData | undefined,
+        clearUrl: string,
+        getDataUrl: string,
+        label: string
+    ): HTMLTableRowElement {
         const row = document.createElement('tr');
 
-        let dataCell: string;
-        if (cell === undefined) {
-            dataCell = 'N/A';
-        } else if ('error' in cell) {
-            // Ошибку загрузки показываем видимо (а не прячем в консоль); полный текст — в подсказке.
-            dataCell = `<span class="text-danger fw-bold" title="${this.escapeHtml(cell.error)}">⚠ Ошибка загрузки</span>`;
-        } else {
-            dataCell = this.escapeHtml(cell.value);
-        }
+        const titleCell = document.createElement('td');
+        titleCell.textContent = title;
 
-        row.innerHTML = `
-            <td>${this.escapeHtml(title)}</td>
-            <td>${dataCell}</td>
-            <td>
-                <button class="btn btn-sm btn-danger clear-item" data-url="${clearUrl}" data-label="${label}">
-                    Очистить
-                </button>
-            </td>
-        `;
+        // Ссылку на ячейку данных сохраняем, чтобы после очистки обновлять только её (см. refreshCell),
+        // а не пересобирать весь виджет тяжёлым fetchAndRender.
+        const dataCell = document.createElement('td');
+        this.renderCellContent(dataCell, cell);
 
-        const button = row.querySelector('.clear-item') as HTMLButtonElement;
+        const actionCell = document.createElement('td');
+        const button = document.createElement('button');
+        button.className = 'btn btn-sm btn-danger clear-item';
+        button.textContent = 'Очистить';
+        button.dataset.url = clearUrl;
+        button.dataset.label = label;
         button.addEventListener('click', async () => {
-            await this.handleClear(clearUrl, label);
+            await this.handleClear(clearUrl, getDataUrl, label, dataCell);
         });
+        actionCell.appendChild(button);
+
+        row.append(titleCell, dataCell, actionCell);
 
         return row;
+    }
+
+    /**
+     * Отрисовывает содержимое ячейки данных (значение | ошибка | не загружено) в переданный `<td>`.
+     * Вынесено отдельно, чтобы переиспользовать при первичном рендере и при точечном обновлении.
+     *
+     * @param dataCell Ячейка данных
+     * @param cell Данные ячейки
+     */
+    private renderCellContent(dataCell: HTMLTableCellElement, cell: CellData | undefined): void {
+        if (cell === undefined) {
+            dataCell.textContent = 'N/A';
+        } else if ('error' in cell) {
+            // Ошибку загрузки показываем видимо (а не прячем в консоль); полный текст — в подсказке.
+            dataCell.innerHTML = `<span class="text-danger fw-bold" title="${this.escapeHtml(cell.error)}">⚠ Ошибка загрузки</span>`;
+        } else {
+            dataCell.textContent = cell.value;
+        }
+    }
+
+    /**
+     * Точечно обновляет одну ячейку данных: тянет только её эндпойнт вместо полного fetchAndRender.
+     * На время запроса показывает мини-спиннер прямо в ячейке.
+     *
+     * @param getDataUrl URL получения данных строки
+     * @param dataCell Ячейка данных для обновления
+     */
+    private async refreshCell(getDataUrl: string, dataCell: HTMLTableCellElement): Promise<void> {
+        dataCell.innerHTML =
+            '<span class="spinner-border spinner-border-sm text-secondary" role="status">' +
+            '<span class="visually-hidden">Обновление...</span></span>';
+        const cell = await this.loadCell(getDataUrl);
+        this.renderCellContent(dataCell, cell);
     }
 
     /** Экранирует строку для безопасной вставки в HTML (значения/ошибки от сервера). */
@@ -239,14 +277,22 @@ class ClearWidget {
     }
 
     /**
-     * Обрабатывает очистку по одному эндпойнту
+     * Обрабатывает очистку по одному эндпойнту. После успеха обновляет только свою ячейку данных
+     * (refreshCell), а не весь виджет — сбор данных остальных строк долгий и здесь не нужен.
      *
-     * @param url URL эндпойнта
+     * @param clearUrl URL очистки
+     * @param getDataUrl URL получения данных этой строки
      * @param label Метка
+     * @param dataCell Ячейка данных для точечного обновления
      */
-    private async handleClear(url: string, label: string): Promise<void> {
+    private async handleClear(
+        clearUrl: string,
+        getDataUrl: string,
+        label: string,
+        dataCell: HTMLTableCellElement
+    ): Promise<void> {
         try {
-            const response = await this.apiService.post(url);
+            const response = await this.apiService.post(clearUrl);
             // Ошибка прилетит исключением из ApiService.post (сервер отдаёт 4xx/5xx) — её ловит catch.
             if (typeof showAlert === 'function') {
                 showAlert({
@@ -255,7 +301,7 @@ class ClearWidget {
                     duration: 3000,
                 });
             }
-            await this.fetchAndRender();
+            await this.refreshCell(getDataUrl, dataCell);
         } catch (error) {
             this.errorHandler.handleError(error, 'handleClear');
         }
