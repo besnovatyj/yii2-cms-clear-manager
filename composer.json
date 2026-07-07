@@ -1,7 +1,6 @@
 {
   "name": "besnovatyj/yii2-cms-clear-manager",
   "description": "Модуль для управления и очистки временных данных приложения",
-  "version": "1.0.0",
   "type": "yii2-extension",
   "license": "MIT",
   "authors": [
