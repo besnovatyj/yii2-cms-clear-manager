@@ -4,7 +4,7 @@
  * Copyright (c) 2026 Besnovatyj. Licensed under the MIT License.
  */
 
-return [
+return [[
     'label' => 'Clear Manager',
     'iconClass' => 'bi bi-trash me-1',
     'url' => ['/ClearManager/backend/index/index'],
@@ -22,4 +22,4 @@ return [
             ],
         ],
     ],
-];
+]];
