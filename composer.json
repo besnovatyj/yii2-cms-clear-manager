@@ -31,9 +31,8 @@
     }
   },
   "require": {
-    "besnovatyj/yii2-cms-kernel": "^1.0",
+    "besnovatyj/yii2-cms-kernel": "^1.2",
     "besnovatyj/yii2-cms-contracts": "^1.0",
-    "besnovatyj/yii2-cms-user": "^1.0",
     "ext-apcu": "*",
     "php": ">=8.4",
     "yiisoft/yii2": "~2.0"

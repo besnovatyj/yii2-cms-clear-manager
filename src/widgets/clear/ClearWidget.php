@@ -10,7 +10,7 @@ declare(strict_types=1);
 namespace Besnovatyj\ClearManager\widgets\clear;
 
 use Besnovatyj\ClearManager\services\EndpointCollectorService;
-use Besnovatyj\User\components\Helper;
+use Besnovatyj\Kernel\security\AccessHelper;
 use yii\bootstrap5\Widget;
 
 /**
@@ -94,6 +94,6 @@ class ClearWidget extends Widget
      */
     private function hasAccess(string $route): bool
     {
-        return Helper::checkRoute($route);
+        return AccessHelper::checkRoute($route);
     }
 }
