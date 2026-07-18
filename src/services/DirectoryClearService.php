@@ -32,6 +32,26 @@ class DirectoryClearService
     }
 
     /**
+     * Возвращает путь к директории, только если он задан в конфиге И реально
+     * существует на диске. Иначе — null.
+     *
+     * Часть директорий (например, runtime/debug, runtime/mail) в проде могут
+     * отсутствовать: они создаются лениво только при соответствующей активности.
+     * Раньше guard проверял лишь `!== null`, из-за чего FilesystemHelper кидал
+     * InvalidArgumentException на несуществующем пути. Единая точка резолва
+     * приводит отсутствующий каталог к штатному «нечего показывать/очищать».
+     *
+     * @param string $key Ключ директории в конфиге clear-dirs
+     * @return string|null
+     */
+    private function resolveExistingDir(string $key): ?string
+    {
+        $path = $this->directories[$key] ?? null;
+
+        return ($path !== null && is_dir($path)) ? $path : null;
+    }
+
+    /**
      * Очищает кеш приложения
      *
      * @return bool
@@ -56,7 +76,7 @@ class DirectoryClearService
             return true;
         }
 
-        $path = $this->directories['frontAssets'] ?? null;
+        $path = $this->resolveExistingDir('frontAssets');
         if ($path === null) {
             return false;
         }
@@ -76,7 +96,7 @@ class DirectoryClearService
             return true;
         }
 
-        $path = $this->directories['backAssets'] ?? null;
+        $path = $this->resolveExistingDir('backAssets');
         if ($path === null) {
             return false;
         }
@@ -92,7 +112,7 @@ class DirectoryClearService
      */
     public function clearLogs(): bool
     {
-        $path = $this->directories['logs'] ?? null;
+        $path = $this->resolveExistingDir('logs');
         if ($path === null) {
             return false;
         }
@@ -108,7 +128,7 @@ class DirectoryClearService
      */
     public function clearDebug(): bool
     {
-        $path = $this->directories['debug'] ?? null;
+        $path = $this->resolveExistingDir('debug');
         if ($path === null) {
             return false;
         }
@@ -123,7 +143,7 @@ class DirectoryClearService
      */
     public function clearMail(): bool
     {
-        $path = $this->directories['mail'] ?? null;
+        $path = $this->resolveExistingDir('mail');
         if ($path === null) {
             return false;
         }
@@ -139,7 +159,7 @@ class DirectoryClearService
      */
     public function clearStatic(): bool
     {
-        $path = $this->directories['static'] ?? null;
+        $path = $this->resolveExistingDir('static');
         if ($path === null) {
             return false;
         }
@@ -171,7 +191,7 @@ class DirectoryClearService
             return 'Ссылки (не требуется)';
         }
 
-        $path = $this->directories['frontAssets'] ?? null;
+        $path = $this->resolveExistingDir('frontAssets');
         if ($path === null) {
             return 'N/A';
         }
@@ -192,7 +212,7 @@ class DirectoryClearService
             return 'Ссылки (не требуется)';
         }
 
-        $path = $this->directories['backAssets'] ?? null;
+        $path = $this->resolveExistingDir('backAssets');
         if ($path === null) {
             return 'N/A';
         }
@@ -209,7 +229,7 @@ class DirectoryClearService
      */
     public function getLogsData(): string
     {
-        $path = $this->directories['logs'] ?? null;
+        $path = $this->resolveExistingDir('logs');
         if ($path === null) {
             return 'N/A';
         }
@@ -226,7 +246,7 @@ class DirectoryClearService
      */
     public function getDebugData(): string
     {
-        $path = $this->directories['debug'] ?? null;
+        $path = $this->resolveExistingDir('debug');
         if ($path === null) {
             return 'N/A';
         }
@@ -243,7 +263,7 @@ class DirectoryClearService
      */
     public function getMailData(): string
     {
-        $path = $this->directories['mail'] ?? null;
+        $path = $this->resolveExistingDir('mail');
         if ($path === null) {
             return 'N/A';
         }
@@ -260,7 +280,7 @@ class DirectoryClearService
      */
     public function getStaticData(): string
     {
-        $path = $this->directories['static'] ?? null;
+        $path = $this->resolveExistingDir('static');
         if ($path === null) {
             return 'N/A';
         }
