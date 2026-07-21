@@ -44,9 +44,15 @@ class ClearWidget {
 
         const allData: Record<string, Record<string, CellData>> = {};
 
-        for (const [moduleId, moduleEndpoints] of Object.entries(this.endpoints)) {
-            allData[moduleId] = await this.fetchModuleData(moduleEndpoints);
-        }
+        // Запросы ко всем модулям идут ПАРАЛЛЕЛЬНО (Promise.all), а не по цепочке await-ов:
+        // раньше сбор был последовательным и его время = сумме времён всех эндпойнтов. Ошибка каждой
+        // ячейки поглощается внутри loadCell и возвращается как CellData, поэтому Promise.all не падает.
+        // Присваивание в allData из параллельных задач безопасно (JS однопоточный).
+        await Promise.all(
+            Object.entries(this.endpoints).map(async ([moduleId, moduleEndpoints]) => {
+                allData[moduleId] = await this.fetchModuleData(moduleEndpoints);
+            })
+        );
 
         this.render(allData);
     }
@@ -63,9 +69,12 @@ class ClearWidget {
         if (this.isSingleEndpoint(moduleEndpoints)) {
             data['default'] = await this.loadCell(moduleEndpoints.getData);
         } else {
-            for (const [key, endpoint] of Object.entries(moduleEndpoints)) {
-                data[key] = await this.loadCell(endpoint.getData);
-            }
+            // Строки одного модуля тоже грузим параллельно.
+            await Promise.all(
+                Object.entries(moduleEndpoints).map(async ([key, endpoint]) => {
+                    data[key] = await this.loadCell(endpoint.getData);
+                })
+            );
         }
 
         return data;

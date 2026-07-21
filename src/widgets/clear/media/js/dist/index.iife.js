@@ -106,9 +106,11 @@ this.ClearWidget = function() {
     async fetchAndRender() {
       this.element.innerHTML = '<div class="loading-indicator"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Загрузка...</span></div></div>';
       const allData = {};
-      for (const [moduleId, moduleEndpoints] of Object.entries(this.endpoints)) {
-        allData[moduleId] = await this.fetchModuleData(moduleEndpoints);
-      }
+      await Promise.all(
+        Object.entries(this.endpoints).map(async ([moduleId, moduleEndpoints]) => {
+          allData[moduleId] = await this.fetchModuleData(moduleEndpoints);
+        })
+      );
       this.render(allData);
     }
     /**
@@ -122,9 +124,11 @@ this.ClearWidget = function() {
       if (this.isSingleEndpoint(moduleEndpoints)) {
         data["default"] = await this.loadCell(moduleEndpoints.getData);
       } else {
-        for (const [key, endpoint] of Object.entries(moduleEndpoints)) {
-          data[key] = await this.loadCell(endpoint.getData);
-        }
+        await Promise.all(
+          Object.entries(moduleEndpoints).map(async ([key, endpoint]) => {
+            data[key] = await this.loadCell(endpoint.getData);
+          })
+        );
       }
       return data;
     }
