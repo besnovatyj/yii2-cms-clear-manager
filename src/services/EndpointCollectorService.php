@@ -28,12 +28,12 @@ class EndpointCollectorService
         $modules = Yii::$app->getModules();
 
         foreach ($modules as $moduleId => $module) {
-            $moduleInstance = $this->getModuleInstance($moduleId, $module);
-            if ($moduleInstance === null) {
+            $params = $this->extractModuleParams($module);
+            if ($params === []) {
                 continue;
             }
 
-            $moduleEndpoints = $this->extractClearEndpoints($moduleInstance);
+            $moduleEndpoints = $this->extractClearEndpoints($params);
             if (!empty($moduleEndpoints)) {
                 $endpoints[$moduleId] = $moduleEndpoints;
             }
@@ -43,35 +43,37 @@ class EndpointCollectorService
     }
 
     /**
-     * Получает экземпляр модуля
+     * Читает params модуля БЕЗ его инстанцирования.
      *
-     * @param string $moduleId ID модуля
-     * @param mixed $module Конфигурация или экземпляр модуля
-     * @return Module|null
+     * `getModules()` возвращает либо уже созданный экземпляр (тогда берём его `params`), либо
+     * массив-дефиницию из конфига (тогда берём `params` прямо из него). Так сбор эндпойнтов не запускает
+     * `init()`/бутстрап каждого зарегистрированного модуля. Строку/замыкание в качестве дефиниции не
+     * разворачиваем (это потребовало бы инстанцирования) — такие модули пропускаем.
+     *
+     * @param mixed $module Экземпляр модуля или его дефиниция из конфига
+     * @return array Массив params (пустой, если недоступен без инстанцирования)
      */
-    private function getModuleInstance(string $moduleId, mixed $module): ?Module
+    private function extractModuleParams(mixed $module): array
     {
-        try {
-            if ($module instanceof Module) {
-                return $module;
-            }
-
-            return Yii::$app->getModule($moduleId);
-        } catch (\Exception $e) {
-            Yii::warning("Не удалось получить модуль {$moduleId}: " . $e->getMessage(), __METHOD__);
-            return null;
+        if ($module instanceof Module) {
+            return $module->params ?? [];
         }
+
+        if (is_array($module)) {
+            return $module['params'] ?? [];
+        }
+
+        return [];
     }
 
     /**
-     * Извлекает эндпойнты очистки из конфигурации модуля
+     * Извлекает эндпойнты очистки из params модуля
      *
-     * @param Module $module Экземпляр модуля
+     * @param array $params Params модуля
      * @return array
      */
-    private function extractClearEndpoints(Module $module): array
+    private function extractClearEndpoints(array $params): array
     {
-        $params = $module->params ?? [];
         $endpoints = $params['endpoints']['clear'] ?? [];
 
         if (empty($endpoints)) {
