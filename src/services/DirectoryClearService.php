@@ -268,7 +268,7 @@ class DirectoryClearService
             return 'N/A';
         }
 
-        $count = FilesystemHelper::countFiles($path);
+        $count = FilesystemHelper::countFiles($path, true);
         return "{$count} писем";
     }
 
