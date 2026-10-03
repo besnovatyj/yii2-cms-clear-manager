@@ -12,7 +12,6 @@ use Besnovatyj\Kernel\module\CmsModule;
 use Besnovatyj\Contracts\dashboard\DashboardWidgetDescriptor;
 use Besnovatyj\Contracts\dashboard\ProvidesDashboardWidgets;
 use Besnovatyj\Contracts\module\DeclaresModule;
-use Besnovatyj\Contracts\module\ProvidesAdminMenu;
 use Besnovatyj\ClearManager\widgets\dashboard\ClearCacheTile;
 
 /**
@@ -22,7 +21,7 @@ use Besnovatyj\ClearManager\widgets\dashboard\ClearCacheTile;
  * о временных данных из различных модулей приложения и их очистки.
  */
 class Module extends CmsModule implements
-    DeclaresModule, ProvidesAdminMenu, ProvidesDashboardWidgets
+    DeclaresModule, ProvidesDashboardWidgets
 {
     public const bool EDITABLE = true;
     public const string VERSION = '1.0.0';
@@ -31,7 +30,6 @@ class Module extends CmsModule implements
     public static function moduleId(): string { return self::MODULE_ID; }
     public static function moduleVersion(): string { return self::VERSION; }
     public static function isEditable(): bool { return self::EDITABLE; }
-    public static function adminMenu(): array { return require __DIR__.'/config/adminMenu.php'; }
     public static function moduleConfig(): array { return require __DIR__.'/config/config.php'; }
 
     /** @return DashboardWidgetDescriptor[] */
